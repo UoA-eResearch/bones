@@ -24,6 +24,7 @@
             width: 100%;
             top: 0px;
             padding: 5px;
+            z-index: 999;
         }
 
         a {
@@ -43,6 +44,7 @@
 
         #measurements_table {
             position: absolute;
+            z-index: 1000;
             top: 10px;
             right: 10px;
             background-color: black;
@@ -54,6 +56,7 @@
 </head>
 
 <body>
+    <div id="info">Controls: left mouse button to rotate, right mouse button to pan. Mouse wheel to zoom. Double click to focus</div>
     <div id="container"></div>
     <table id="measurements_table">
         <thead>
