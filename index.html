@@ -143,6 +143,8 @@
             controls = new ArcballControls(camera, labelRenderer.domElement, scene);
             controls.addEventListener('change', render);
             controls.setGizmosVisible(false);
+            controls.minDistance = 1
+            controls.maxDistance = 2000
             // axes
             const axesHelper = new THREE.AxesHelper(250);
             scene.add(axesHelper);
