@@ -40,11 +40,31 @@
             border: 1px solid #fff;
             padding: 2px;
         }
+
+        #measurements_table {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: black;
+            border-radius: 4px;
+            border: 1px solid #fff;
+            padding: 2px;
+        }
     </style>
 </head>
 
 <body>
     <div id="container"></div>
+    <table id="measurements_table">
+        <thead>
+            <tr>
+                <th>Measurement</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+        <tbody id="measurements">
+        </tbody>
+    </table>
     <script type="importmap">
         {
             "imports": {
@@ -55,6 +75,7 @@
     </script>
     <script type="module">
 
+        import $ from 'https://cdn.jsdelivr.net/npm/jquery@3.7.1/+esm'
         import * as THREE from 'three';
         import Stats from 'three/addons/libs/stats.module.js';
         import { PLYLoader } from 'three/addons/loaders/PLYLoader.js';
@@ -71,6 +92,10 @@
 
         init();
 
+        function distance(a, b) {
+            return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2)
+        }
+
         papaparse.parse("example_landmarks.txt", {
             download: true,
             header: true,
@@ -78,6 +103,7 @@
             skipEmptyLines: true,
             complete: function (results) {
                 console.log(results);
+                var landmarks = {}
                 for (var landmark of results.data) {
                     const labelDiv = document.createElement('div');
                     labelDiv.className = 'label';
@@ -85,6 +111,15 @@
                     const label = new CSS2DObject(labelDiv);
                     label.position.set(landmark.x, landmark.y, landmark.z);
                     scene.add(label)
+                    landmarks[landmark.Landmark] = landmark
+                }
+                var measurements = {
+                    ASIS_width: distance(landmarks.LASIS, landmarks.RASIS),
+                    PSIS_width: distance(landmarks.LPSIS, landmarks.RPSIS),
+                }
+                console.log(measurements)
+                for (var measurement in measurements) {
+                    $("#measurements").append(`<tr><td>${measurement}</td><td>${measurements[measurement].toLocaleString()}</td></tr>`)
                 }
             }
         })
@@ -153,9 +188,6 @@
             container.appendChild(stats.dom);
             window.addEventListener('resize', onWindowResize);
             window.addEventListener( 'keydown', onKeyDown );
-
-            // fetch landmarks
-            papaparse.Parse
         }
 
         function onWindowResize() {
