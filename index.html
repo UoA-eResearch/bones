@@ -95,6 +95,23 @@
 
         init();
 
+        function addLabel(text, position) {
+            const labelDiv = document.createElement('div');
+            labelDiv.className = 'label';
+            labelDiv.textContent = text;
+            const label = new CSS2DObject(labelDiv);
+            label.position.copy(position);
+            scene.add(label);
+        }
+
+        function annotateLine(start, end, text) {
+            const material = new THREE.LineBasicMaterial({ color: 0x0000ff });
+            const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
+            const line = new THREE.Line(geometry, material);
+            scene.add(line);
+            addLabel(text, new THREE.Vector3().addVectors(start, end).divideScalar(2));
+        }
+
         papaparse.parse("example_landmarks.txt", {
             download: true,
             header: true,
@@ -102,30 +119,31 @@
             skipEmptyLines: true,
             complete: function (results) {
                 console.log(results);
+                var landmarks = {}
                 for (var landmark of results.data) {
-                    const labelDiv = document.createElement('div');
-                    labelDiv.className = 'label';
-                    labelDiv.textContent = landmark.Landmark;
-                    const label = new CSS2DObject(labelDiv);
-                    label.position.set(landmark.x, landmark.y, landmark.z);
-                    scene.add(label)
-                }
-            }
-        })
-
-        papaparse.parse("measurements_example.txt", {
-            download: true,
-            header: true,
-            dynamicTyping: true,
-            skipEmptyLines: true,
-            complete: function(results) {
-                var measurements = results.data[0]
-                console.log(measurements)
-                for (var key in measurements) {
-                    if (key != "Case_name") {
-                        $("#measurements").append(`<tr><td>${key}</td><td>${measurements[key].toLocaleString()}</td></tr>`)
+                    landmarks[landmark.Landmark] = new THREE.Vector3(landmark.x, landmark.y, landmark.z)
+                    if (!landmark.Landmark.endsWith("_mid")) {
+                        addLabel(landmark.Landmark, landmarks[landmark.Landmark])
                     }
                 }
+
+                papaparse.parse("measurements_example.txt", {
+                    download: true,
+                    header: true,
+                    dynamicTyping: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        var measurements = results.data[0]
+                        console.log(measurements)
+                        for (var key in measurements) {
+                            if (key != "Case_name") {
+                                $("#measurements").append(`<tr><td>${key}</td><td>${measurements[key].toLocaleString()}</td></tr>`)
+                            }
+                        }
+                        annotateLine(landmarks.LASIS, landmarks.RASIS,`ASIS_width: ${measurements.ASIS_width.toLocaleString()}`);
+                        annotateLine(landmarks.LPSIS, landmarks.RPSIS, `PSIS_width: ${measurements.PSIS_width.toLocaleString()}`);
+                    }
+                })
             }
         })
 
@@ -186,8 +204,8 @@
             controls.minDistance = 1
             controls.maxDistance = 2000
             // axes
-            const axesHelper = new THREE.AxesHelper(250);
-            scene.add(axesHelper);
+            //const axesHelper = new THREE.AxesHelper(250);
+            //scene.add(axesHelper);
             // stats
             //stats = new Stats();
             //container.appendChild(stats.dom);
