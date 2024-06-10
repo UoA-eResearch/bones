@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>bones</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+        body {
+            background-color: #000;
+            color: #fff;
+            padding: 0;
+            margin: 0;
+            font-weight: bold;
+            overflow: hidden;
+            font-family: sans-serif;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        #info {
+            background-color: #000;
+            position: absolute;
+            width: 100%;
+            top: 0px;
+            padding: 5px;
+        }
+
+        a {
+            color: #0080ff;
+        }
+
+        b {
+            color: orange
+        }
+
+        .label {
+            background-color: rgba(0, 0, 0, 0.8);
+            border-radius: 4px;
+            border: 1px solid #fff;
+            padding: 2px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container"></div>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module">
+
+        import * as THREE from 'three';
+        import Stats from 'three/addons/libs/stats.module.js';
+        import { PLYLoader } from 'three/addons/loaders/PLYLoader.js';
+        import WebGL from 'three/addons/capabilities/WebGL.js';
+        import { ArcballControls } from 'three/addons/controls/ArcballControls.js';
+        import papaparse from 'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/+esm';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+        let container = document.getElementById('container')
+
+        let stats;
+
+        let camera, cameraTarget, scene, renderer, controls, labelRenderer;
+
+        init();
+
+        papaparse.parse("example_landmarks.txt", {
+            download: true,
+            header: true,
+            dynamicTyping: true,
+            skipEmptyLines: true,
+            complete: function (results) {
+                console.log(results);
+                for (var landmark of results.data) {
+                    const labelDiv = document.createElement('div');
+                    labelDiv.className = 'label';
+                    labelDiv.textContent = landmark.Landmark;
+                    const label = new CSS2DObject(labelDiv);
+                    label.position.set(landmark.x, landmark.y, landmark.z);
+                    scene.add(label)
+                }
+            }
+        })
+
+        function init() {
+
+            if (!WebGL.isWebGLAvailable()) {
+                const warning = WebGL.getWebGLErrorMessage();
+                container.appendChild(warning);
+                return;
+            }
+
+            camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 1, 10000);
+            camera.position.set(1000, 0, 0);
+
+            scene = new THREE.Scene();
+
+            const material = new THREE.MeshPhongMaterial({ color: 0xffffff, flatShading: false });
+
+            const loader = new PLYLoader();
+            for (var ply of ["Left_femur.ply", "Left_tibfib.ply", "Pelvis.ply", "Right_femur.ply", "Right_tibfib.ply"]) {
+                loader.load(ply, function (geometry) {
+                    geometry.computeVertexNormals(true);
+                    const mesh = new THREE.Mesh(geometry, material);
+                    scene.add(mesh);
+                });
+            }
+
+            // lights
+
+            const dirLight1 = new THREE.DirectionalLight(0xffffff, 3);
+            dirLight1.position.set(1, 1, 1);
+            scene.add(dirLight1);
+
+            const dirLight2 = new THREE.DirectionalLight(0x002288, 3);
+            dirLight2.position.set(-1, -1, -1);
+            scene.add(dirLight2);
+
+            const ambientLight = new THREE.AmbientLight(0x555555);
+            scene.add(ambientLight);
+            // renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setAnimationLoop(animate);
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            labelRenderer = new CSS2DRenderer();
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.domElement.style.position = 'absolute';
+            labelRenderer.domElement.style.top = '0px';
+            document.body.appendChild(labelRenderer.domElement);
+
+            //controls
+            controls = new ArcballControls(camera, labelRenderer.domElement, scene);
+            controls.addEventListener('change', render);
+            controls.setGizmosVisible(false);
+            // axes
+            const axesHelper = new THREE.AxesHelper(250);
+            scene.add(axesHelper);
+            // stats
+            stats = new Stats();
+            container.appendChild(stats.dom);
+            window.addEventListener('resize', onWindowResize);
+            window.addEventListener( 'keydown', onKeyDown );
+
+            // fetch landmarks
+            papaparse.Parse
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            render();
+            stats.update();
+        }
+
+        function render() {
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+
+        function onKeyDown(event) {
+            if (event.key === 'c') {
+                if (event.ctrlKey || event.metaKey) {
+                    controls.copyState();
+                }
+            } else if (event.key === 'v') {
+                if (event.ctrlKey || event.metaKey) {
+                    controls.pasteState();
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
