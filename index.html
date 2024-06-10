@@ -142,6 +142,9 @@
                         }
                         annotateLine(landmarks.LASIS, landmarks.RASIS,`ASIS_width: ${measurements.ASIS_width.toLocaleString()}`);
                         annotateLine(landmarks.LPSIS, landmarks.RPSIS, `PSIS_width: ${measurements.PSIS_width.toLocaleString()}`);
+                        annotateLine(landmarks.LHJC, landmarks.LHJC.addScalar(measurements.LHJ_diameter / 2), `LHJ_diameter: ${measurements.LHJ_diameter.toLocaleString()}`);
+                        annotateLine(landmarks.RHJC, landmarks.RHJC.addScalar(measurements.RHJ_diameter / 2), `RHJ_diameter: ${measurements.RHJ_diameter.toLocaleString()}`);
+                        annotateLine(landmarks.ASIS_mid, landmarks.PSIS_mid, `Pelvis_depth: ${measurements.pelvis_depth.toLocaleString()}`);
                     }
                 })
             }
