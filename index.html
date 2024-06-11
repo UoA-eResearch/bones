@@ -104,12 +104,29 @@
             scene.add(label);
         }
 
-        function annotateLine(start, end, text) {
-            const material = new THREE.LineBasicMaterial({ color: 0x0000ff });
+        function annotateLine(start, end, text, textpos="midpoint") {
+            const material = new THREE.LineBasicMaterial({ color: 0x0000ff, depthTest: false });
             const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
             const line = new THREE.Line(geometry, material);
             scene.add(line);
-            addLabel(text, new THREE.Vector3().addVectors(start, end).divideScalar(2));
+            if (textpos == "midpoint") {
+                addLabel(text, new THREE.Vector3().addVectors(start, end).divideScalar(2));
+            } else if (textpos == "end") {
+                addLabel(text, end);
+            } else {
+                addLabel(text, start);
+            }
+        }
+
+        function annotateDiameter(center, diameter, text, axis="x", textpos="start") {
+            if (axis == "x") {
+                var start = new THREE.Vector3().copy(center).add(new THREE.Vector3(diameter / 2))
+                var end = new THREE.Vector3().copy(center).sub(new THREE.Vector3(diameter / 2))
+            } else if (axis == "z") {
+                var start = new THREE.Vector3().copy(center).add(new THREE.Vector3(0, 0, diameter / 2))
+                var end = new THREE.Vector3().copy(center).sub(new THREE.Vector3(0, 0, diameter / 2))
+            }
+            annotateLine(start, end, text, textpos);
         }
 
         papaparse.parse("example_landmarks.txt", {
@@ -121,11 +138,12 @@
                 console.log(results);
                 var landmarks = {}
                 for (var landmark of results.data) {
-                    landmarks[landmark.Landmark] = new THREE.Vector3(landmark.x, landmark.y, landmark.z)
-                    if (!landmark.Landmark.endsWith("_mid")) {
+                    landmarks[landmark.Landmark.trim()] = new THREE.Vector3(landmark.x, landmark.y, landmark.z)
+                    if (landmark.Landmark.indexOf("mid") == -1) {
                         addLabel(landmark.Landmark, landmarks[landmark.Landmark])
                     }
                 }
+                console.log(landmarks)
 
                 papaparse.parse("measurements_example.txt", {
                     download: true,
@@ -142,9 +160,13 @@
                         }
                         annotateLine(landmarks.LASIS, landmarks.RASIS,`ASIS_width: ${measurements.ASIS_width.toLocaleString()}`);
                         annotateLine(landmarks.LPSIS, landmarks.RPSIS, `PSIS_width: ${measurements.PSIS_width.toLocaleString()}`);
-                        annotateLine(landmarks.LHJC, landmarks.LHJC.addScalar(measurements.LHJ_diameter / 2), `LHJ_diameter: ${measurements.LHJ_diameter.toLocaleString()}`);
-                        annotateLine(landmarks.RHJC, landmarks.RHJC.addScalar(measurements.RHJ_diameter / 2), `RHJ_diameter: ${measurements.RHJ_diameter.toLocaleString()}`);
+                        annotateDiameter(landmarks.LHJC, measurements.LHJ_diameter, `LHJ_diameter: ${measurements.RHJ_diameter.toLocaleString()}`);
+                        annotateDiameter(landmarks.RHJC, measurements.RHJ_diameter, `RHJ_diameter: ${measurements.RHJ_diameter.toLocaleString()}`);
                         annotateLine(landmarks.ASIS_mid, landmarks.PSIS_mid, `Pelvis_depth: ${measurements.pelvis_depth.toLocaleString()}`);
+                        annotateDiameter(landmarks.FHC_left, measurements.left_FHC_diameter, `Left_FHC_diameter: ${measurements.left_FHC_diameter.toLocaleString()}`, "z", "end");
+                        annotateDiameter(landmarks.FHC_right, measurements.right_FHC_diameter, `Right_FHC_diameter: ${measurements.right_FHC_diameter.toLocaleString()}`, "z", "end");
+                        annotateLine(landmarks.med_epicon_left, landmarks.lat_epicon_left, `left_epicon_width: ${measurements.left_epicon_width.toLocaleString()}`);
+                        annotateLine(landmarks.med_epicon_right, landmarks.lat_epicon_right, `right_epicon_width: ${measurements.right_epicon_width.toLocaleString()}`);
                     }
                 })
             }
