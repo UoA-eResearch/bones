@@ -167,6 +167,8 @@
                         annotateDiameter(landmarks.FHC_right, measurements.right_FHC_diameter, `Right_FHC_diameter: ${measurements.right_FHC_diameter.toLocaleString()}`, "z", "end");
                         annotateLine(landmarks.med_epicon_left, landmarks.lat_epicon_left, `left_epicon_width: ${measurements.left_epicon_width.toLocaleString()}`);
                         annotateLine(landmarks.med_epicon_right, landmarks.lat_epicon_right, `right_epicon_width: ${measurements.right_epicon_width.toLocaleString()}`);
+                        annotateLine(landmarks.lat_epicon_left, landmarks.lat_great_trochant_left, `left_femoral_length: ${measurements.left_femoral_length.toLocaleString()}`);
+                        annotateLine(landmarks.lat_epicon_right, landmarks.lat_great_trochant_right, `right_femoral_length: ${measurements.right_femoral_length.toLocaleString()}`);
                     }
                 })
             }
