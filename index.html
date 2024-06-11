@@ -109,12 +109,14 @@
             const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
             const line = new THREE.Line(geometry, material);
             scene.add(line);
-            if (textpos == "midpoint") {
-                addLabel(text, new THREE.Vector3().addVectors(start, end).divideScalar(2));
-            } else if (textpos == "end") {
-                addLabel(text, end);
-            } else {
-                addLabel(text, start);
+            if (text) {
+                if (textpos == "midpoint") {
+                    addLabel(text, new THREE.Vector3().addVectors(start, end).divideScalar(2));
+                } else if (textpos == "end") {
+                    addLabel(text, end);
+                } else if (textpos == "start") {
+                    addLabel(text, start);
+                }
             }
         }
 
@@ -139,7 +141,7 @@
                 var landmarks = {}
                 for (var landmark of results.data) {
                     landmarks[landmark.Landmark.trim()] = new THREE.Vector3(landmark.x, landmark.y, landmark.z)
-                    if (landmark.Landmark.indexOf("mid") == -1) {
+                    if ((landmark.Landmark.indexOf("mid") == -1) && (landmark.Landmark.indexOf("int") == -1)) {
                         addLabel(landmark.Landmark, landmarks[landmark.Landmark])
                     }
                 }
@@ -169,6 +171,13 @@
                         annotateLine(landmarks.med_epicon_right, landmarks.lat_epicon_right, `right_epicon_width: ${measurements.right_epicon_width.toLocaleString()}`);
                         annotateLine(landmarks.lat_epicon_left, landmarks.lat_great_trochant_left, `left_femoral_length: ${measurements.left_femoral_length.toLocaleString()}`);
                         annotateLine(landmarks.lat_epicon_right, landmarks.lat_great_trochant_right, `right_femoral_length: ${measurements.right_femoral_length.toLocaleString()}`);
+
+                        annotateLine(landmarks.medial_condyle_left, landmarks.lateral_condyle_left, `left_condylar_width: ${measurements.left_condylar_width.toLocaleString()}`)
+                        annotateLine(landmarks.medial_condyle_right, landmarks.lateral_condyle_right, `right_condylar_width: ${measurements.right_condylar_width.toLocaleString()}`)
+                        annotateLine(landmarks.medial_malleolus_left, landmarks.lateral_malleolus_left, `left_malleolar_width: ${measurements.left_malleolar_width.toLocaleString()}`)
+                        annotateLine(landmarks.medial_malleolus_right, landmarks.lateral_malleolus_right, `right_malleolar_width: ${measurements.right_malleolar_width.toLocaleString()}`)
+                        annotateLine(landmarks.lateral_malleolus_left, landmarks.lateral_condyle_left, `left_tibial_length: ${measurements.left_tibial_length.toLocaleString()}`)
+                        annotateLine(landmarks.lateral_malleolus_right, landmarks.lateral_condyle_right, `right_tibial_length: ${measurements.right_tibial_length.toLocaleString()}`)
                     }
                 })
             }
