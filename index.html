@@ -56,7 +56,8 @@
 </head>
 
 <body>
-    <div id="info">Controls: left mouse button to rotate, right mouse button to pan. Mouse wheel to zoom. Double click to focus</div>
+    <div id="info">Controls: left mouse button to rotate, right mouse button to pan. Mouse wheel to zoom. Double click
+        to focus</div>
     <div id="container"></div>
     <table id="measurements_table">
         <thead>
@@ -104,8 +105,8 @@
             scene.add(label);
         }
 
-        function annotateLine(start, end, text, textpos="midpoint") {
-            const material = new THREE.LineBasicMaterial({ color: 0x0000ff, depthTest: false });
+        function annotateLine(start, end, text, textpos = "midpoint") {
+            const material = new THREE.LineBasicMaterial({ color: "green", depthTest: false });
             const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
             const line = new THREE.Line(geometry, material);
             scene.add(line);
@@ -120,7 +121,7 @@
             }
         }
 
-        function annotateDiameter(center, diameter, text, axis="x", textpos="start") {
+        function annotateDiameter(center, diameter, text, axis = "x", textpos = "start") {
             if (axis == "x") {
                 var start = new THREE.Vector3().copy(center).add(new THREE.Vector3(diameter / 2))
                 var end = new THREE.Vector3().copy(center).sub(new THREE.Vector3(diameter / 2))
@@ -129,6 +130,43 @@
                 var end = new THREE.Vector3().copy(center).sub(new THREE.Vector3(0, 0, diameter / 2))
             }
             annotateLine(start, end, text, textpos);
+        }
+
+        function annotateAngle(P1, P2, P3, text) {
+            var material = new THREE.LineBasicMaterial({ color: 'red', depthTest: false })
+            var line = new THREE.Line(
+                new THREE.BufferGeometry().setFromPoints([P1, P2, P3]),
+                material
+            );
+
+            scene.add(line);
+
+            const N = 60;
+            var points = [];
+            for (var i = 0; i <= N; i++) points.push(new THREE.Vector3());
+
+            var arc = new THREE.Line(
+                new THREE.BufferGeometry().setFromPoints(points),
+                material
+            );
+
+            scene.add(arc);
+
+            // calculate arc radius
+            var radius = Math.min(P1.distanceTo(P2), P3.distanceTo(P2)) / 2;
+
+            // set interpolation points
+            P1 = new THREE.Vector3().copy(P1).sub(P2).setLength(radius).add(P2);
+            P3 = new THREE.Vector3().copy(P3).sub(P2).setLength(radius).add(P2);
+
+            // collect points along the arc
+            for (var i = 0; i <= N; i++)
+                points[i].lerpVectors(P1, P3, i / N)
+                    .sub(P2).setLength(radius).add(P2);
+
+            // update arc
+            arc.geometry.setFromPoints(points);
+            addLabel(text, new THREE.Vector3().addVectors(P1, P3).divideScalar(2));
         }
 
         papaparse.parse("example_landmarks.txt", {
@@ -152,7 +190,7 @@
                     header: true,
                     dynamicTyping: true,
                     skipEmptyLines: true,
-                    complete: function(results) {
+                    complete: function (results) {
                         var measurements = results.data[0]
                         console.log(measurements)
                         for (var key in measurements) {
@@ -160,7 +198,7 @@
                                 $("#measurements").append(`<tr><td>${key}</td><td>${measurements[key].toLocaleString()}</td></tr>`)
                             }
                         }
-                        annotateLine(landmarks.LASIS, landmarks.RASIS,`ASIS_width: ${measurements.ASIS_width.toLocaleString()}`);
+                        annotateLine(landmarks.LASIS, landmarks.RASIS, `ASIS_width: ${measurements.ASIS_width.toLocaleString()}`);
                         annotateLine(landmarks.LPSIS, landmarks.RPSIS, `PSIS_width: ${measurements.PSIS_width.toLocaleString()}`);
                         annotateDiameter(landmarks.LHJC, measurements.LHJ_diameter, `LHJ_diameter: ${measurements.RHJ_diameter.toLocaleString()}`);
                         annotateDiameter(landmarks.RHJC, measurements.RHJ_diameter, `RHJ_diameter: ${measurements.RHJ_diameter.toLocaleString()}`);
@@ -178,6 +216,11 @@
                         annotateLine(landmarks.medial_malleolus_right, landmarks.lateral_malleolus_right, `right_malleolar_width: ${measurements.right_malleolar_width.toLocaleString()}`)
                         annotateLine(landmarks.lateral_malleolus_left, landmarks.lateral_condyle_left, `left_tibial_length: ${measurements.left_tibial_length.toLocaleString()}`)
                         annotateLine(landmarks.lateral_malleolus_right, landmarks.lateral_condyle_right, `right_tibial_length: ${measurements.right_tibial_length.toLocaleString()}`)
+
+                        var p2 = new THREE.Vector3().addVectors(landmarks.neck_centre_left, landmarks.lat_great_trochant_left).divideScalar(2)
+                        annotateAngle(landmarks.FHC_left, p2, landmarks.epicon_mid_left, `left_NSA: ${measurements.left_NSA.toLocaleString()}°`)
+                        p2 = new THREE.Vector3().addVectors(landmarks.neck_centre_right, landmarks.lat_great_trochant_right).divideScalar(2)
+                        annotateAngle(landmarks.FHC_right, p2, landmarks.epicon_mid_right, `right_NSA: ${measurements.right_NSA.toLocaleString()}°`)
                     }
                 })
             }
@@ -246,7 +289,7 @@
             //stats = new Stats();
             //container.appendChild(stats.dom);
             window.addEventListener('resize', onWindowResize);
-            window.addEventListener( 'keydown', onKeyDown );
+            window.addEventListener('keydown', onKeyDown);
         }
 
         function onWindowResize() {
