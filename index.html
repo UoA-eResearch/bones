@@ -54,6 +54,10 @@
             background-color: red;
         }
 
+        .hidden {
+            display: none;
+        }
+
         #measurements_table {
             position: absolute;
             z-index: 1000;
@@ -63,6 +67,18 @@
             border-radius: 4px;
             border: 1px solid #fff;
             padding: 2px;
+        }
+
+        #controls {
+            position: absolute;
+            z-index: 1000;
+            bottom: 10px;
+            right: 10px;
+            background-color: black;
+            border-radius: 4px;
+            border: 1px solid #fff;
+            padding: 2px;
+            text-align: left;
         }
     </style>
 </head>
@@ -81,6 +97,11 @@
         <tbody id="measurements">
         </tbody>
     </table>
+    <div id="controls">
+        <input type="checkbox" id="landmark" checked> Show landmarks<br>
+        <input type="checkbox" id="measurement" checked> Show measurements<br>
+        <input type="checkbox" id="angle" checked> Show angles
+    </div>
     <script type="importmap">
         {
             "imports": {
@@ -102,6 +123,10 @@
         import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
         import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
         import { Line2 } from 'three/addons/lines/Line2.js';
+
+        $("input").change(function () {
+            $("." + this.id).toggleClass("hidden");
+        });
 
         let container = document.getElementById('container')
 
@@ -158,7 +183,8 @@
             const material = new LineMaterial( {
                 color: "red",
                 linewidth: 2,
-                depthTest: false
+                depthTest: false,
+                dashed: true
             } );
             const line = new Line2( geometry, material );
             scene.add(line);
@@ -182,6 +208,8 @@
             var arcGeometry = new LineGeometry();
             arcGeometry.setPositions(points);
             const arc = new Line2( arcGeometry, material );
+            // have to computeLineDistances to show dash
+            arc.computeLineDistances();
             scene.add(arc);
 
             addLabel(text, new THREE.Vector3().addVectors(P1, P3).divideScalar(2), "angle");
@@ -211,34 +239,41 @@
                     complete: function (results) {
                         var measurements = results.data[0]
                         console.log(measurements)
+                        var measurements_formatted = {}
                         for (var key in measurements) {
                             if (key != "Case_name") {
-                                $("#measurements").append(`<tr><td>${key}</td><td>${measurements[key].toLocaleString()}</td></tr>`)
+                                measurements_formatted[key] = Math.round(measurements[key])
+                                if (key.match(/width|diameter|length|depth/)) {
+                                    measurements_formatted[key] += "mm"
+                                } else {
+                                    measurements_formatted[key] += "°"
+                                }
+                                $("#measurements").append(`<tr><td>${key}</td><td>${measurements_formatted[key]}</td></tr>`)
                             }
                         }
-                        annotateLine(landmarks.LASIS, landmarks.RASIS, `ASIS_width: ${measurements.ASIS_width.toLocaleString()}`);
-                        annotateLine(landmarks.LPSIS, landmarks.RPSIS, `PSIS_width: ${measurements.PSIS_width.toLocaleString()}`);
-                        annotateDiameter(landmarks.LHJC, measurements.LHJ_diameter, `LHJ_diameter: ${measurements.RHJ_diameter.toLocaleString()}`);
-                        annotateDiameter(landmarks.RHJC, measurements.RHJ_diameter, `RHJ_diameter: ${measurements.RHJ_diameter.toLocaleString()}`);
-                        annotateLine(landmarks.ASIS_mid, landmarks.PSIS_mid, `Pelvis_depth: ${measurements.pelvis_depth.toLocaleString()}`);
-                        annotateDiameter(landmarks.FHC_left, measurements.left_FHC_diameter, `Left_FHC_diameter: ${measurements.left_FHC_diameter.toLocaleString()}`, "z", "end");
-                        annotateDiameter(landmarks.FHC_right, measurements.right_FHC_diameter, `Right_FHC_diameter: ${measurements.right_FHC_diameter.toLocaleString()}`, "z", "end");
-                        annotateLine(landmarks.med_epicon_left, landmarks.lat_epicon_left, `left_epicon_width: ${measurements.left_epicon_width.toLocaleString()}`);
-                        annotateLine(landmarks.med_epicon_right, landmarks.lat_epicon_right, `right_epicon_width: ${measurements.right_epicon_width.toLocaleString()}`);
-                        annotateLine(landmarks.lat_epicon_left, landmarks.lat_great_trochant_left, `left_femoral_length: ${measurements.left_femoral_length.toLocaleString()}`);
-                        annotateLine(landmarks.lat_epicon_right, landmarks.lat_great_trochant_right, `right_femoral_length: ${measurements.right_femoral_length.toLocaleString()}`);
+                        annotateLine(landmarks.LASIS, landmarks.RASIS, `ASIS_width: ${measurements_formatted.ASIS_width}`);
+                        annotateLine(landmarks.LPSIS, landmarks.RPSIS, `PSIS_width: ${measurements_formatted.PSIS_width}`);
+                        annotateDiameter(landmarks.LHJC, measurements.LHJ_diameter, `LHJ_diameter: ${measurements_formatted.RHJ_diameter}`);
+                        annotateDiameter(landmarks.RHJC, measurements.RHJ_diameter, `RHJ_diameter: ${measurements_formatted.RHJ_diameter}`);
+                        annotateLine(landmarks.ASIS_mid, landmarks.PSIS_mid, `Pelvis_depth: ${measurements_formatted.pelvis_depth}`);
+                        annotateDiameter(landmarks.FHC_left, measurements.left_FHC_diameter, `Left_FHC_diameter: ${measurements_formatted.left_FHC_diameter}`, "z", "end");
+                        annotateDiameter(landmarks.FHC_right, measurements.right_FHC_diameter, `Right_FHC_diameter: ${measurements_formatted.right_FHC_diameter}`, "z", "end");
+                        annotateLine(landmarks.med_epicon_left, landmarks.lat_epicon_left, `left_epicon_width: ${measurements_formatted.left_epicon_width}`);
+                        annotateLine(landmarks.med_epicon_right, landmarks.lat_epicon_right, `right_epicon_width: ${measurements_formatted.right_epicon_width}`);
+                        annotateLine(landmarks.lat_epicon_left, landmarks.lat_great_trochant_left, `left_femoral_length: ${measurements_formatted.left_femoral_length}`);
+                        annotateLine(landmarks.lat_epicon_right, landmarks.lat_great_trochant_right, `right_femoral_length: ${measurements_formatted.right_femoral_length}`);
 
-                        annotateLine(landmarks.medial_condyle_left, landmarks.lateral_condyle_left, `left_condylar_width: ${measurements.left_condylar_width.toLocaleString()}`)
-                        annotateLine(landmarks.medial_condyle_right, landmarks.lateral_condyle_right, `right_condylar_width: ${measurements.right_condylar_width.toLocaleString()}`)
-                        annotateLine(landmarks.medial_malleolus_left, landmarks.lateral_malleolus_left, `left_malleolar_width: ${measurements.left_malleolar_width.toLocaleString()}`)
-                        annotateLine(landmarks.medial_malleolus_right, landmarks.lateral_malleolus_right, `right_malleolar_width: ${measurements.right_malleolar_width.toLocaleString()}`)
-                        annotateLine(landmarks.lateral_malleolus_left, landmarks.lateral_condyle_left, `left_tibial_length: ${measurements.left_tibial_length.toLocaleString()}`)
-                        annotateLine(landmarks.lateral_malleolus_right, landmarks.lateral_condyle_right, `right_tibial_length: ${measurements.right_tibial_length.toLocaleString()}`)
+                        annotateLine(landmarks.medial_condyle_left, landmarks.lateral_condyle_left, `left_condylar_width: ${measurements_formatted.left_condylar_width}`)
+                        annotateLine(landmarks.medial_condyle_right, landmarks.lateral_condyle_right, `right_condylar_width: ${measurements_formatted.right_condylar_width}`)
+                        annotateLine(landmarks.medial_malleolus_left, landmarks.lateral_malleolus_left, `left_malleolar_width: ${measurements_formatted.left_malleolar_width}`)
+                        annotateLine(landmarks.medial_malleolus_right, landmarks.lateral_malleolus_right, `right_malleolar_width: ${measurements_formatted.right_malleolar_width}`)
+                        annotateLine(landmarks.lateral_malleolus_left, landmarks.lateral_condyle_left, `left_tibial_length: ${measurements_formatted.left_tibial_length}`)
+                        annotateLine(landmarks.lateral_malleolus_right, landmarks.lateral_condyle_right, `right_tibial_length: ${measurements_formatted.right_tibial_length}`)
 
                         var p2 = new THREE.Vector3().addVectors(landmarks.neck_centre_left, landmarks.lat_great_trochant_left).divideScalar(2)
-                        annotateAngle(landmarks.FHC_left, p2, landmarks.epicon_mid_left, `left_NSA: ${measurements.left_NSA.toLocaleString()}°`)
+                        annotateAngle(landmarks.FHC_left, p2, landmarks.epicon_mid_left, `left_NSA: ${measurements_formatted.left_NSA}`)
                         p2 = new THREE.Vector3().addVectors(landmarks.neck_centre_right, landmarks.lat_great_trochant_right).divideScalar(2)
-                        annotateAngle(landmarks.FHC_right, p2, landmarks.epicon_mid_right, `right_NSA: ${measurements.right_NSA.toLocaleString()}°`)
+                        annotateAngle(landmarks.FHC_right, p2, landmarks.epicon_mid_right, `right_NSA: ${measurements_formatted.right_NSA}`)
                     }
                 })
             }
