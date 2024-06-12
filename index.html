@@ -99,6 +99,9 @@
         import { ArcballControls } from 'three/addons/controls/ArcballControls.js';
         import papaparse from 'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/+esm';
         import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+        import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
+        import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
+        import { Line2 } from 'three/addons/lines/Line2.js';
 
         let container = document.getElementById('container')
 
@@ -118,9 +121,14 @@
         }
 
         function annotateLine(start, end, text, textpos = "midpoint") {
-            const material = new THREE.LineBasicMaterial({ color: "green", depthTest: false, linewidth: 10 });
-            const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
-            const line = new THREE.Line(geometry, material);
+            const geometry = new LineGeometry();
+            geometry.setPositions([start.x, start.y, start.z, end.x, end.y, end.z]);
+            const material = new LineMaterial( {
+                color: "green",
+                linewidth: 2,
+                depthTest: false
+            } );
+            const line = new Line2( geometry, material );
             scene.add(line);
             if (text) {
                 if (textpos == "midpoint") {
@@ -145,24 +153,15 @@
         }
 
         function annotateAngle(P1, P2, P3, text) {
-            var material = new THREE.LineBasicMaterial({ color: 'red', depthTest: false })
-            var line = new THREE.Line(
-                new THREE.BufferGeometry().setFromPoints([P1, P2, P3]),
-                material
-            );
-
+            const geometry = new LineGeometry();
+            geometry.setPositions([P1.x, P1.y, P1.z, P2.x, P2.y, P2.z, P3.x, P3.y, P3.z]);
+            const material = new LineMaterial( {
+                color: "red",
+                linewidth: 2,
+                depthTest: false
+            } );
+            const line = new Line2( geometry, material );
             scene.add(line);
-
-            const N = 60;
-            var points = [];
-            for (var i = 0; i <= N; i++) points.push(new THREE.Vector3());
-
-            var arc = new THREE.Line(
-                new THREE.BufferGeometry().setFromPoints(points),
-                material
-            );
-
-            scene.add(arc);
 
             // calculate arc radius
             var radius = Math.min(P1.distanceTo(P2), P3.distanceTo(P2)) / 2;
@@ -172,12 +171,19 @@
             P3 = new THREE.Vector3().copy(P3).sub(P2).setLength(radius).add(P2);
 
             // collect points along the arc
-            for (var i = 0; i <= N; i++)
-                points[i].lerpVectors(P1, P3, i / N)
+            var points = []
+            const N = 60;
+            for (var i = 0; i <= N; i++) {
+                var p = new THREE.Vector3().lerpVectors(P1, P3, i / N)
                     .sub(P2).setLength(radius).add(P2);
+                points.push(p.x,p.y,p.z)
+            }
 
-            // update arc
-            arc.geometry.setFromPoints(points);
+            var arcGeometry = new LineGeometry();
+            arcGeometry.setPositions(points);
+            const arc = new Line2( arcGeometry, material );
+            scene.add(arc);
+
             addLabel(text, new THREE.Vector3().addVectors(P1, P3).divideScalar(2), "angle");
         }
 
