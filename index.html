@@ -42,6 +42,18 @@
             padding: 2px;
         }
 
+        .label.landmark {
+            background-color: rgba(75, 140, 201, 0.8)
+        }
+
+        .label.measurement {
+            background-color: green;
+        }
+
+        .label.angle {
+            background-color: red;
+        }
+
         #measurements_table {
             position: absolute;
             z-index: 1000;
@@ -96,9 +108,9 @@
 
         init();
 
-        function addLabel(text, position) {
+        function addLabel(text, position, additional_class="landmark") {
             const labelDiv = document.createElement('div');
-            labelDiv.className = 'label';
+            labelDiv.className = `label ${additional_class}`;
             labelDiv.textContent = text;
             const label = new CSS2DObject(labelDiv);
             label.position.copy(position);
@@ -106,17 +118,17 @@
         }
 
         function annotateLine(start, end, text, textpos = "midpoint") {
-            const material = new THREE.LineBasicMaterial({ color: "green", depthTest: false });
+            const material = new THREE.LineBasicMaterial({ color: "green", depthTest: false, linewidth: 10 });
             const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
             const line = new THREE.Line(geometry, material);
             scene.add(line);
             if (text) {
                 if (textpos == "midpoint") {
-                    addLabel(text, new THREE.Vector3().addVectors(start, end).divideScalar(2));
+                    addLabel(text, new THREE.Vector3().addVectors(start, end).divideScalar(2), "measurement");
                 } else if (textpos == "end") {
-                    addLabel(text, end);
+                    addLabel(text, end, "measurement");
                 } else if (textpos == "start") {
-                    addLabel(text, start);
+                    addLabel(text, start, "measurement");
                 }
             }
         }
@@ -166,7 +178,7 @@
 
             // update arc
             arc.geometry.setFromPoints(points);
-            addLabel(text, new THREE.Vector3().addVectors(P1, P3).divideScalar(2));
+            addLabel(text, new THREE.Vector3().addVectors(P1, P3).divideScalar(2), "angle");
         }
 
         papaparse.parse("example_landmarks.txt", {
